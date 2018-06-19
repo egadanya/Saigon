@@ -18,7 +18,7 @@ String commandName(String y)
   }
 
   if (spacePosition >= 0) {
-    for (int l = 0; l < spacePosition; l++) {
+    for (int l = 1; l < spacePosition; l++) {
       letters += y[l];
     }
   }
@@ -40,7 +40,7 @@ String commandNumbers(String y)
   }
 
   if (somePosition >= 0) {
-    for (int l = somePosition ; l < y.length(); l++) {
+    for (int l = somePosition + 1 ; l < y.length(); l++) {
       numbers += y[l];
     }
   }
@@ -66,6 +66,7 @@ void loop()
       char tempSimbol = Serial.read();
       if (tempSimbol == '/') {
         command += tempSimbol;
+        
       };
     }
     else
@@ -78,17 +79,22 @@ void loop()
       else {
         lettersEnd = command;
         command = "";
+
+        //Запрос ID
+        if (lettersEnd=="/id;") Serial.println("1");
+        else Serial.println("I don't care");
+        
+        //Вызов функий
+        String lettersOrig = commandName(lettersEnd);
+        Serial.println(lettersOrig);
+
+        String numberOrig = commandNumbers(lettersEnd);
+        Serial.println(numberOrig);
+        Serial.println(" ");
+
       }
     }
   }
-
-
-  
-  String lettersOrig = commandName(lettersEnd);
-  Serial.println(lettersOrig);
-  
-  String numberOrig = commandNumbers(lettersEnd);
-  Serial.println(numberOrig);
 
 
 }
