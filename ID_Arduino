@@ -81,8 +81,16 @@ void loop()
         command = "";
 
         //Запрос ID
-        if (lettersEnd=="/id;") Serial.println("1");
-        else Serial.println("I don't care");
+        if (lettersEnd == "/id;") {
+            Serial.println("01");
+            for (int i = 0  ; i <= 180; i = i + 5)
+            {
+              microServo.write(i);
+              delay(25);
+            }
+
+          }
+          else Serial.println("I don't care");
         
         //Вызов функий
         String lettersOrig = commandName(lettersEnd);
