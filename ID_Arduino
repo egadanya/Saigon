@@ -3,6 +3,8 @@
 Servo microServo;
 int servoPin = 10;
 
+String lettersEnd = "";
+String command = "";
 
 //Функция считывающая имена
 String commandName(String y)
@@ -48,58 +50,84 @@ String commandNumbers(String y)
   return numbers;
 }
 
+//Функция
+
 
 void setup() {
   Serial.begin(9600);
   microServo.attach(servoPin);
+  pinMode(13, OUTPUT);
+  pinMode(8, OUTPUT);
 }
-String lettersEnd = "";
-String command = "";
+
 
 
 void loop()
 {
-
-  if (Serial.available() > 0)
-  {
-    if (command.length() == 0) {
-      char tempSimbol = Serial.read();
-      if (tempSimbol == '/') {
-        command += tempSimbol;
-        
-      };
-    }
-    else
+  
+    if (Serial.available() > 0)
     {
-      char tempSimbol = Serial.read();
-      if (tempSimbol != ';') {
+      if (command.length() == 0) {
+        char tempSimbol = Serial.read();
+        if (tempSimbol == '/') {
+          command += tempSimbol;
 
-        command += tempSimbol;
+        };
       }
-      else {
-        lettersEnd = command;
-        command = "";
-              
+      else
+      {
+        char tempSimbol = Serial.read();
+        if (tempSimbol != ';') {
+
+          command += tempSimbol;
+        }
+        else {
+          lettersEnd = command;
+          command = "";
+
+        }
+
         //Вызов функий
         String lettersOrig = commandName(lettersEnd);
         Serial.print("");
 
         String numberOrig = commandNumbers(lettersEnd);
         Serial.print("");
-        
-         //Запрос ID
-        if (lettersEnd == "/id") Serial.println("01");
-          else Serial.print("2");
-        
-        //Работа с сервой
-        if (lettersOrig=="servo")
-        { int corner = numberOrig.toInt();
-          microServo.write(corner);
-          }
-        else Serial.print("");
-        
 
-      }
+        //Запрос ID
+        if (lettersEnd == "/id") Serial.println("02");
+        else Serial.print("");
+
+        //Работа с сервой
+        if (lettersOrig == "servo")
+        {
+          int corner = numberOrig.toInt(); //если число, то из stringName.toInt()
+          if (corner > 180) Serial.print("");
+          else microServo.write(corner);
+        }
+        else Serial.print("");
+
+        //Работа с led'ом
+        if (lettersOrig == "led" && numberOrig == "on")
+        {
+          digitalWrite(13, HIGH);
+        }
+        else if (lettersOrig == "led" && numberOrig == "off")
+        {
+          digitalWrite(13, LOW);
+        }
+        else Serial.print("");
+
+        //PWM
+        if (lettersOrig == "pwm")
+        {
+          if (numberOrig.toInt() > 255) Serial.print("");
+          else analogWrite(8, numberOrig.toInt());
+        }
+
+
+      
     }
   }
 }
+
