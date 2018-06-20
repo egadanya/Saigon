@@ -79,30 +79,27 @@ void loop()
       else {
         lettersEnd = command;
         command = "";
-
-        //Запрос ID
-        if (lettersEnd == "/id;") {
-            Serial.println("01");
-            for (int i = 0  ; i <= 180; i = i + 5)
-            {
-              microServo.write(i);
-              delay(25);
-            }
-
-          }
-          else Serial.println("I don't care");
-        
+              
         //Вызов функий
         String lettersOrig = commandName(lettersEnd);
-        Serial.println(lettersOrig);
+        Serial.print("");
 
         String numberOrig = commandNumbers(lettersEnd);
-        Serial.println(numberOrig);
-        Serial.println(" ");
+        Serial.print("");
+        
+         //Запрос ID
+        if (lettersEnd == "/id") Serial.println("01");
+          else Serial.print("2");
+        
+        //Работа с сервой
+        if (lettersOrig=="servo")
+        { int corner = numberOrig.toInt();
+          microServo.write(corner);
+          }
+        else Serial.print("");
+        
 
       }
     }
   }
-
-
 }
