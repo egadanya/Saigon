@@ -1,0 +1,205 @@
+#include <inttypes.h> 
+#include "SBGC.h" 
+#include "SBGC_Arduino.h" 
+#include <String.h> 
+#include <SoftwareSerial.h> 
+
+SoftwareSerial serialCamera(8, 9); // RX, TX> 
+
+// Serial baud rate should match with the rate, configured for the SimpleBGC controller 
+#define SERIAL_SPEED 57600 
+
+// delay between commands, ms 
+#define SBGC_CMD_DELAY 10 
+
+// Set serial port where SBGC32 is connected 
+#define serial serialCamera 
+
+
+/*****************************************************************************/ 
+String lettersEnd = ""; 
+String command = ""; 
+int memberAngle[3] = {0, 0, 0}; 
+
+//Функция считывающая имена 
+String commandName(String y) 
+{ 
+String letters = ""; 
+int spacePosition = -1; 
+for (int count = 0; count < y.length(); count++) 
+{ 
+if (y[count] == ' ') 
+{ 
+spacePosition = count; 
+} 
+} 
+
+if (spacePosition >= 0) { 
+for (int l = 1; l < spacePosition; l++) { 
+letters += y[l]; 
+} 
+} 
+
+return letters; 
+} 
+
+//Функция считывающая числа 
+String commandNumbers(String y) 
+{ 
+String numbers = ""; 
+int somePosition = -1; 
+for (int q = 0; q < y.length(); q++) 
+{ 
+if (y[q] == ' ') 
+{ 
+somePosition = q; 
+} 
+} 
+
+if (somePosition >= 0) { 
+for (int l = somePosition + 1 ; l < y.length(); l++) { 
+numbers += y[l]; 
+} 
+} 
+
+return numbers; 
+} 
+
+/*****************************************************************************/ 
+
+void setup() { 
+serialCamera.begin(SERIAL_SPEED); 
+SBGC_Demo_setup(&serialCamera); 
+Serial.begin(115200); // Обычная скорость передачи данных 
+pinMode(13, OUTPUT); 
+
+
+} 
+
+
+void loop() { 
+blink_led(1); 
+SBGC_cmd_control_t c = { 0, 0, 0, 0, 0, 0, 0}; 
+
+if (Serial.available() > 0) 
+{ 
+if (command.length() == 0) { 
+char tempSimbol = Serial.read(); 
+if (tempSimbol == '/') { 
+command += tempSimbol; 
+} 
+} 
+else 
+{ 
+char tempSimbol = Serial.read(); 
+if (tempSimbol != ';') { 
+
+command += tempSimbol; 
+} 
+else { 
+lettersEnd = command; 
+command = ""; 
+
+//Вызов функий 
+String lettersOrig = commandName(lettersEnd); 
+//Serial.print(""); 
+
+String numberOrig = commandNumbers(lettersEnd); 
+//Serial.print(""); 
+
+//id 
+
+if (lettersEnd == "/id") Serial.println("02"); 
+else Serial.print(""); 
+
+//angles 
+
+if (lettersEnd == "/angles") { 
+Serial.println(memberAngle[0], ""); 
+Serial.println(memberAngle[1], ""); 
+Serial.println(memberAngle[2], ""); 
+} 
+else Serial.print(""); 
+
+
+//Цикл управления подвесом 
+while (lettersEnd != 0) { 
+c.mode = SBGC_CONTROL_MODE_SPEED_ANGLE; 
+c.speedROLL = c.speedPITCH = c.speedYAW = 40 * SBGC_SPEED_SCALE; 
+SBGC_cmd_control_send(c, sbgc_parser); 
+
+//PITCH 
+if (lettersOrig == "pitch") 
+{ 
+int cornerPITCH = numberOrig.toInt(); //если число, то из stringName.toInt() 
+c.mode = SBGC_CONTROL_MODE_ANGLE; 
+memberAngle[0] = cornerPITCH; 
+c.anglePITCH = SBGC_DEGREE_TO_ANGLE(memberAngle[0]); 
+Serial.println( memberAngle[0]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+delay(SBGC_CMD_DELAY); 
+lettersEnd = ""; 
+} 
+else 
+{ 
+c.mode = SBGC_CONTROL_MODE_ANGLE; 
+c.anglePITCH = SBGC_DEGREE_TO_ANGLE(memberAngle[0]); 
+c.angleROLL = SBGC_DEGREE_TO_ANGLE(memberAngle[1]); 
+c.angleYAW = SBGC_DEGREE_TO_ANGLE(memberAngle[2]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+//Serial.println("this is not PITCH"); 
+
+} 
+
+//ROLL 
+
+if (lettersOrig == "roll") 
+{ 
+int cornerROLL = numberOrig.toInt(); //если число, то из stringName.toInt() 
+memberAngle[1] = cornerROLL; 
+c.mode = SBGC_CONTROL_MODE_ANGLE; 
+c.angleROLL = SBGC_DEGREE_TO_ANGLE(memberAngle[1]); 
+// Serial.println(memberAngle[1]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+delay(SBGC_CMD_DELAY); 
+lettersEnd = ""; 
+
+} 
+else 
+{ 
+c.mode = SBGC_CONTROL_MODE_ANGLE; 
+c.anglePITCH = SBGC_DEGREE_TO_ANGLE(memberAngle[0]); 
+c.angleROLL = SBGC_DEGREE_TO_ANGLE(memberAngle[1]); 
+c.angleYAW = SBGC_DEGREE_TO_ANGLE(memberAngle[2]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+//Serial.println("this is not ROLL"); 
+
+} 
+//YAW 
+
+if (lettersOrig == "yaw") 
+{ 
+int cornerYAW = numberOrig.toInt(); //если число, то из stringName.toInt() 
+c.mode = SBGC_CONTROL_MODE_ANGLE;
+memberAngle[2] = cornerYAW; 
+c.angleYAW = SBGC_DEGREE_TO_ANGLE(memberAngle[2]); 
+Serial.println(memberAngle[2]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+delay(SBGC_CMD_DELAY); 
+lettersEnd = ""; 
+
+} 
+else { 
+c.mode = SBGC_CONTROL_MODE_ANGLE; 
+c.anglePITCH = SBGC_DEGREE_TO_ANGLE(memberAngle[0]); 
+c.angleROLL = SBGC_DEGREE_TO_ANGLE(memberAngle[1]); 
+c.angleYAW = SBGC_DEGREE_TO_ANGLE(memberAngle[2]); 
+SBGC_cmd_control_send(c, sbgc_parser); 
+//Serial.println("this is not YAW"); 
+} 
+lettersEnd = ""; 
+} 
+} 
+} 
+} 
+}
